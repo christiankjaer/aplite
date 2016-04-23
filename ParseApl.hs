@@ -10,6 +10,7 @@ data Expr = Assign Target Expr
           | MonApp MonId Expr
           | SubE SubExpr
           | DyaApp SubExpr DyaId Expr
+          | MonOpApp DyaId MonOp Expr
             deriving (Show)
 
 data SubExpr = SimE SimExpr
@@ -29,6 +30,10 @@ data MonId = Roll
            | Abs
            | Iota
            | Neg
+             deriving (Show)
+
+data MonOp = Reduce
+           | Scan
              deriving (Show)
 
 data DyaId = Add
@@ -51,7 +56,7 @@ data Value = Num [Integer]
              deriving (Show)
 
 languageDef =
-    emptyDef { Token.commentLine = "//"
+    emptyDef { Token.commentLine = "@"
              , Token.identStart = letter
              , Token.identLetter = alphaNum
              , Token.reservedOpNames = ["<-", "+", "-", "*", "%", "~"
@@ -76,6 +81,7 @@ aplParser = whiteSpace >> expr
 
 expr :: Parser Expr
 expr =  try assign
+    <|> try monOpApp
     <|> try dyaApp
     <|> try monApp
     <|> subE
@@ -92,6 +98,13 @@ monApp =
     do mid <- monId
        e <- expr
        return $ MonApp mid e
+
+monOpApp :: Parser Expr
+monOpApp =
+    do did <- dyaId
+       op <- monOp
+       e <- expr
+       return $ MonOpApp did op e
 
 subE :: Parser Expr
 subE =
@@ -155,6 +168,10 @@ dyaId =  (reservedOp "+" >> return Add)
      <|> (reservedOp "take" >> return Drop)
      <|> (reservedOp "drop" >> return Take)
      <|> (reservedOp "," >> return Cat)
+
+monOp :: Parser MonOp
+monOp =  (reservedOp "/" >> return Reduce)
+     <|> (reservedOp "\\" >> return Scan)
 
 parseString :: String -> Expr
 parseString str =
