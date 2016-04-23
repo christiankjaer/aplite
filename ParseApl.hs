@@ -65,8 +65,7 @@ identifier = Token.identifier lexer
 reservedOp = Token.reservedOp lexer
 parens     = Token.parens     lexer
 brackets   = Token.brackets   lexer
-integer    = Token.natural    lexer
-semi       = Token.semi       lexer
+natural    = Token.natural    lexer
 semiSep    = Token.semiSep    lexer
 whiteSpace = Token.whiteSpace lexer
 stringLit  = Token.stringLiteral lexer
@@ -107,13 +106,8 @@ dyaApp =
        return $ DyaApp se did e
 
 subExpr :: Parser SubExpr
-subExpr =  try simE
-       <|> arrE
-
-simE :: Parser SubExpr
-simE =
-    do se <- simExpr
-       return $ SimE se
+subExpr =  try arrE
+       <|> (simExpr >>= \se -> return $ SimE se)
 
 arrE :: Parser SubExpr
 arrE =
@@ -127,7 +121,7 @@ simExpr =  (arrId >>= \aid -> return $ AId aid)
 
 target :: Parser Target
 target =  try varArr
-      <|> var
+      <|> (identifier >>= \id -> return $ Var id)
 
 varArr :: Parser Target
 varArr =
@@ -135,17 +129,12 @@ varArr =
        e <- brackets (semiSep expr)
        return $ VarArr id e
 
-var :: Parser Target
-var =
-    do id <- identifier
-       return $ Var id
-
 arrId :: Parser ArrId
 arrId =  (val >>= \v -> return $ Const v)
      <|> (identifier >>= \id -> return $ VarId id)
 
 val :: Parser Value
-val =  (many1 integer >>= \x -> return $ Num x)
+val =  (many1 natural >>= \x -> return $ Num x)
    <|> (stringLit >>= \lit -> return $ Text lit)
 
 
