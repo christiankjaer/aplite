@@ -5,7 +5,7 @@ Compile with `ghc -o aplite Repl.hs`
 
 Calculating factorials
 ```
-> + / iota 10
+> * / iota 10
 3628800
 ```
 
