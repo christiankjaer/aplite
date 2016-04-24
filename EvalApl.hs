@@ -2,14 +2,23 @@ module EvalApl where
 
 import ParseApl as P
 import Data.List
+import qualified Data.List.Split as LS
 
 data AplValue = Scalar Integer
               | Vector [Integer]
               | Matrix [Integer] [Integer] -- Dimension x Data
 
+
+showMatrix :: [Integer] -> [Integer] -> String
+showMatrix [d] v = show (Vector v)
+showMatrix (d:ds) v =
+    let subLists = LS.chunksOf (fromIntegral d) v
+    in intercalate "\n" $ map (showMatrix ds) subLists
+
 instance Show AplValue where
     show (Scalar i) = show i
-    show (Vector v) = intercalate " " $ map show v
+    show (Vector v) = intercalate "\t" $ map show v
+    show (Matrix dim v) = showMatrix (reverse dim) v
 
 applyDyaFun :: (Integer -> Integer -> Integer) -> AplValue -> AplValue -> AplValue
 applyDyaFun f (Scalar i) (Scalar j) = Scalar (f i j)
@@ -35,6 +44,18 @@ eval (P.DyaApp se P.Subtract exp) = applyDyaFun (-) (evalSubExpr se) (eval exp)
 eval (P.DyaApp se P.Divide exp) = applyDyaFun div (evalSubExpr se) (eval exp)
 eval (P.DyaApp se P.Multiply exp) = applyDyaFun (*) (evalSubExpr se) (eval exp)
 eval (P.DyaApp se P.Exp exp) = applyDyaFun (^) (evalSubExpr se) (eval exp)
+
+eval (P.DyaApp se P.Reshape exp) =
+    let sz = evalSubExpr se
+        e  = eval exp
+    in case (sz, e) of
+        (Scalar i, Scalar j) -> Vector (replicate (fromIntegral i) j)
+        (Scalar i, Vector v) -> Vector (take (fromIntegral i) (cycle v))
+        (Scalar i, Matrix _ v) -> Vector (take (fromIntegral i) (cycle v))
+        (Vector v, Scalar j) -> Matrix v (replicate (fromIntegral (foldr1 (*) v)) j)
+        (Vector v, Vector u) -> Matrix v (take (fromIntegral (foldr1 (*) v)) (cycle u))
+        (Vector v, Matrix _ u) -> Matrix v (take (fromIntegral (foldr1 (*) v)) (cycle u))
+
 
 eval (P.MonOpApp dya P.Reduce expr) =
     case eval expr of

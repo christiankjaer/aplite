@@ -45,6 +45,7 @@ data DyaId = Add
            | Take
            | Drop
            | Cat
+           | Reshape
              deriving (Show)
 
 data ArrId = Const Value
@@ -168,6 +169,7 @@ dyaId =  (reservedOp "+" >> return Add)
      <|> (reservedOp "take" >> return Drop)
      <|> (reservedOp "drop" >> return Take)
      <|> (reservedOp "," >> return Cat)
+     <|> (reservedOp "#" >> return Reshape)
 
 monOp :: Parser MonOp
 monOp =  (reservedOp "/" >> return Reduce)
