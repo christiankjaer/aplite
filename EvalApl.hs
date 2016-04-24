@@ -17,7 +17,7 @@ showMatrix (d:ds) v =
 
 instance Show AplValue where
     show (Scalar i) = show i
-    show (Vector v) = intercalate "\t" $ map show v
+    show (Vector v) = intercalate " " $ map show v
     show (Matrix dim v) = showMatrix (reverse dim) v
 
 applyDyaFun :: (Integer -> Integer -> Integer) -> AplValue -> AplValue -> AplValue
@@ -25,6 +25,11 @@ applyDyaFun f (Scalar i) (Scalar j) = Scalar (f i j)
 applyDyaFun f (Vector v) (Scalar j) = Vector (map (f j) v)
 applyDyaFun f (Scalar i) (Vector v) = Vector (map (f i) v)
 applyDyaFun f (Vector v) (Vector u) = Vector (zipWith f v u)
+
+applyMonFun :: (Integer -> Integer) -> AplValue -> AplValue
+applyMonFun f (Scalar i) = Scalar $ f i
+applyMonFun f (Vector v) = Vector $ map f v
+applyMonFun f (Matrix dim v) = Matrix dim $ map f v
 
 getDyaFun :: P.DyaId -> (Integer -> Integer -> Integer)
 getDyaFun P.Add = (+)
@@ -35,9 +40,22 @@ getDyaFun P.Divide = quot
 
 eval :: P.Expr -> AplValue
 
+eval (P.MonApp P.Not exp) =
+    let not b = if b == 0 then 1 else 0
+    in applyMonFun not (eval exp)
+
+eval (P.MonApp P.Abs exp) = applyMonFun abs (eval exp)
+eval (P.MonApp P.Neg exp) = applyMonFun ((-)0) (eval exp)
+
 eval (P.MonApp P.Iota exp) =
     case eval exp of
         Scalar i -> Vector $ take (fromIntegral i) (iterate ((+) 1) (toInteger 1))
+
+eval (P.MonApp P.Dim exp) =
+    case eval exp of
+        Scalar i -> Scalar 0
+        Vector v -> Scalar $ toInteger (length v)
+        Matrix dim _ -> Vector dim
 
 eval (P.DyaApp se P.Add exp) = applyDyaFun (+) (evalSubExpr se) (eval exp)
 eval (P.DyaApp se P.Subtract exp) = applyDyaFun (-) (evalSubExpr se) (eval exp)
@@ -60,6 +78,10 @@ eval (P.DyaApp se P.Reshape exp) =
 eval (P.MonOpApp dya P.Reduce expr) =
     case eval expr of
         Vector v -> Scalar (foldr1 (getDyaFun dya) v)
+        Matrix [d] v -> Scalar (foldr1 (getDyaFun dya) v)
+        Matrix [d0,d1] v -> Vector $ map (foldr1 (getDyaFun dya))  (LS.chunksOf (fromIntegral d1) v)
+
+
 eval (P.MonOpApp dya P.Scan expr) =
     case eval expr of
         Vector v -> Vector (scanl1 (getDyaFun dya) v)

@@ -30,6 +30,7 @@ data MonId = Roll
            | Abs
            | Iota
            | Neg
+           | Dim
              deriving (Show)
 
 data MonOp = Reduce
@@ -60,7 +61,7 @@ languageDef =
     emptyDef { Token.commentLine = "@"
              , Token.identStart = letter
              , Token.identLetter = alphaNum
-             , Token.reservedOpNames = ["<-", "+", "-", "*", "%", "~"
+             , Token.reservedOpNames = ["<-", "+", "-", "*", "%", "~", "|"
                                        , "/", "\\", ",", "#", "?", "^"
                                        , "o.", "i.", "take", "drop", "iota"]
              }
@@ -158,6 +159,7 @@ monId =  (reservedOp "?" >> return Roll)
      <|> (reservedOp "|" >> return Abs)
      <|> (reservedOp "iota" >> return Iota)
      <|> (reservedOp "-" >> return Neg)
+     <|> (reservedOp "#" >> return Dim)
 
 dyaId :: Parser DyaId
 dyaId =  (reservedOp "+" >> return Add)

@@ -16,3 +16,31 @@ Matrices are supported
 12  15  18
 21  24  27
 ```
+
+Supported functions
+-------------------
+
+### Monadic functions
+
+| Symbol | Meaning          |
+|--------|------------------|
+| `~`    | Boolean not      |
+| `|`    | Absolute value   |
+| `-`    | Negation         |
+| `iota` | Vector [1..n]    |
+| `#`    | Dimension        |
+
+### Dyadic functions
+
+| Symbol   | Meaning                        |
+|----------|--------------------------------|
+|`+ - * %` | Plus, minus, times and divide  |
+|`^`       | Exponentiation                 |
+|`#`       | Reshape                        |
+
+### Monadic operators
+
+| Symbol | Meaning          |
+|--------|------------------|
+| `/`    | Reduce           |
+| `\`    | Scan             |
